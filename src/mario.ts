@@ -8,19 +8,25 @@ const PRINT_SIZE = 16
 enum TileSet {
   Main = 'main',
   Items = 'items',
-  Char = 'character'
+  Char = 'character',
 }
 
 enum TileType {
+  Cloud = 0,
   Item = 1,
-  hCoin = 2,
-  hStar = 3,
+  Grass = 2,
+  hCoin = 3,
+  hStar = 4,
+  sMush = 5,
 }
 
-export function initMario(layer0: HTMLCanvasElement, layer1: HTMLCanvasElement) {
+export function initMario(
+  layer0: HTMLCanvasElement,
+  layer1: HTMLCanvasElement
+) {
   let bgCtx: CanvasRenderingContext2D | null = null
   let unitCtx: CanvasRenderingContext2D | null = null
-  let pos = 1400
+  let pos = 1700
   let tile = {} as {
     [k in TileSet]: HTMLImageElement
   }
@@ -38,7 +44,7 @@ export function initMario(layer0: HTMLCanvasElement, layer1: HTMLCanvasElement) 
     requestAnimationFrame(animate)
 
     now = Date.now()
-    elapsed = now - then;
+    elapsed = now - then
 
     if (elapsed > fpsInterval) {
       then = now - (elapsed % fpsInterval)
@@ -54,14 +60,16 @@ export function initMario(layer0: HTMLCanvasElement, layer1: HTMLCanvasElement) 
     layer1.height = 240
     bgCtx = layer0.getContext('2d')
     unitCtx = layer1.getContext('2d')
-
-    ;[tile[TileSet.Main], tile[TileSet.Items]] = await Promise.all([initTile(), initItemTile()])
+    ;[tile[TileSet.Main], tile[TileSet.Items]] = await Promise.all([
+      initTile(),
+      initItemTile(),
+    ])
 
     initEvent()
     startAnimation(240)
 
-    setInterval(() => cnt = cnt > 1 ? 0 : cnt + 1, 300)
-    setInterval(() => startCnt = startCnt > 2 ? 0 : startCnt + 1, 100)
+    setInterval(() => (cnt = cnt > 1 ? 0 : cnt + 1), 300)
+    setInterval(() => (startCnt = startCnt > 2 ? 0 : startCnt + 1), 100)
   }
 
   function initTile() {
@@ -90,13 +98,17 @@ export function initMario(layer0: HTMLCanvasElement, layer1: HTMLCanvasElement) 
     dx: number,
     dy: number,
     option?: {
-      tileset?: TileSet;
-      gap?: boolean;
+      tileset?: TileSet
+      gap?: boolean
+      dx?: number
+      dy?: number
     }
   ) {
     option = {
       tileset: TileSet.Main,
       gap: true,
+      dx: undefined,
+      dy: undefined,
       ...option,
     }
 
@@ -106,23 +118,32 @@ export function initMario(layer0: HTMLCanvasElement, layer1: HTMLCanvasElement) 
       sy * TILE_SIZE + (option.gap! ? sy : 0),
       TILE_SIZE,
       TILE_SIZE,
-      dx * PRINT_SIZE - pos,
-      dy * PRINT_SIZE,
+      !!option.dx ? option.dx : dx * PRINT_SIZE - pos,
+      !!option.dy ? option.dy : dy * PRINT_SIZE,
       PRINT_SIZE,
       PRINT_SIZE
     )
   }
 
   function draw() {
-    bgCtx?.rect(0, 0, 256, 240)
-    bgCtx?.fill()
+    bgCtx!.rect(0, 0, 256, 240)
+    bgCtx!.fillStyle = '#5c94fc'
+    bgCtx!.fill()
+
     map.bg.forEach((row, xi) => {
       row.forEach((col, yi) => {
         const [x, y, type] = col.split(',').map((el) => Number(el))
 
         drawTile(x, y, xi, yi)
 
-        if (type) {
+        if (type !== undefined) {
+          if ([TileType.Cloud, TileType.Grass].includes(type)) {
+            drawTile(12, 6, xi, yi)
+            drawTile(x, y, xi, yi, {
+              dx: xi * PRINT_SIZE - pos - PRINT_SIZE / 2,
+            })
+          }
+
           if (type === TileType.Item) {
             drawTile(8 + cnt, 10, xi, yi)
           }
@@ -133,6 +154,11 @@ export function initMario(layer0: HTMLCanvasElement, layer1: HTMLCanvasElement) 
 
           if (type === TileType.hStar) {
             drawTile(startCnt, 3, xi, yi, { tileset: TileSet.Items, gap: false })
+          }
+
+          if (type === TileType.sMush) {
+            drawTile(8 + cnt, 10, xi, yi)
+            drawTile(0, 0, xi, yi, { tileset: TileSet.Items, gap: false })
           }
         }
       })
