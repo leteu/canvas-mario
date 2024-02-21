@@ -26,7 +26,7 @@ export function initMario(
 ) {
   let bgCtx: CanvasRenderingContext2D | null = null
   let unitCtx: CanvasRenderingContext2D | null = null
-  let pos = 1700
+  let pos = 2000
   let tile = {} as {
     [k in TileSet]: HTMLImageElement
   }
@@ -132,33 +132,45 @@ export function initMario(
 
     map.bg.forEach((row, xi) => {
       row.forEach((col, yi) => {
+        if (!col.trim()) return
+
         const [x, y, type] = col.split(',').map((el) => Number(el))
 
-        drawTile(x, y, xi, yi)
-
-        if (type !== undefined) {
-          if ([TileType.Cloud, TileType.Grass].includes(type)) {
-            drawTile(12, 6, xi, yi)
+        switch (type as TileType | undefined) {
+          case TileType.Cloud: {
+            drawTile(x, y, xi, yi, {
+              dx: xi * PRINT_SIZE - pos - PRINT_SIZE / 2,
+              dy: xi * PRINT_SIZE - PRINT_SIZE / 2,
+            })
+            break
+          }
+          case TileType.Grass: {
             drawTile(x, y, xi, yi, {
               dx: xi * PRINT_SIZE - pos - PRINT_SIZE / 2,
             })
+            break
           }
-
-          if (type === TileType.Item) {
-            drawTile(8 + cnt, 10, xi, yi)
+          case TileType.Item: {
+            drawTile(x + cnt, y, xi, yi)
+            break
           }
-
-          if (type === TileType.hCoin) {
+          case TileType.hCoin: {
+            drawTile(x, y, xi, yi)
             drawTile(8 + cnt, 9, xi, yi)
+            break
           }
-
-          if (type === TileType.hStar) {
+          case TileType.hStar: {
+            drawTile(x, y, xi, yi)
             drawTile(startCnt, 3, xi, yi, { tileset: TileSet.Items, gap: false })
+            break
           }
-
-          if (type === TileType.sMush) {
-            drawTile(8 + cnt, 10, xi, yi)
+          case TileType.sMush: {
+            drawTile(x + cnt, y, xi, yi)
             drawTile(0, 0, xi, yi, { tileset: TileSet.Items, gap: false })
+            break
+          }
+          default: {
+            drawTile(x, y, xi, yi)
           }
         }
       })
